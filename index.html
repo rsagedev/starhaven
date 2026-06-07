@@ -145,6 +145,8 @@
 
   .ctrl{font-size:16px;font-family:"Silkscreen",monospace;}
   .ctrl label{cursor:pointer;}
+
+  #projects{scroll-margin-top:16px;}
 </style>
 </head>
 <body>
@@ -162,7 +164,7 @@
 
   <nav>
     <a href="#">home</a><a href="#">about</a>
-    <a href="#">projects</a><a href="#">links</a><a href="guestbook.html">guestbook</a>
+    <a href="#projects">projects</a><a href="#">links</a><a href="guestbook.html">guestbook</a>
   </nav>
 
   <div class="cols">
@@ -185,8 +187,8 @@
         </div>
       </section>
 
-      <section class="win">
-        <div class="bar">projects.dir <span class="x">[ &#215; ]</span></div>
+      <section class="win" id="projects">
+        <div class="bar" id="projects">projects.dir <span class="x">[ &#215; ]</span></div>
         <div class="body">
           <ul class="updates">
             <li><a href="#">&#10022; W.I.P.</a> <span class="d">&mdash; no projects to post at the time</span></li>
