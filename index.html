@@ -384,10 +384,6 @@ const MOON_TZ  = 'America/Chicago';   // YOUR timezone (IANA name)
     $('moonTime').textContent=now.toLocaleTimeString('en-US',{timeZone:MOON_TZ,hour:'2-digit',minute:'2-digit',second:'2-digit'});
   }
   update(); setInterval(update,1000);
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(function(p){ lat=p.coords.latitude; lng=p.coords.longitude; update(); },
-      function(){}, {timeout:8000});
-  }
 })();
 
 /* ---- rain (straight down) + remembered toggle ---- */
