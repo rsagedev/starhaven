@@ -421,12 +421,12 @@ var rain=(function(){
   const list=document.getElementById('whatsnew');
   if(!list) return;
   function stamp(iso){
-    const d=new Date(iso), now=new Date();
-    const sameDay = d.toDateString()===now.toDateString();   // same calendar day?
-    return sameDay
-      ? d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})   // e.g. 3:42 PM
-      : d.toLocaleDateString('en-US',{month:'short',day:'numeric'});      // e.g. Jun 5
-  }
+  const d=new Date(iso), now=new Date();
+  const sameDay = d.toDateString()===now.toDateString();
+  return sameDay
+    ? d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+    : d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
   fetch('https://api.github.com/repos/'+REPO+'/commits?per_page=3')
     .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
     .then(function(commits){
