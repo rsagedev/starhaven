@@ -454,11 +454,12 @@ const MOON_TZ  = 'America/Chicago';   // YOUR timezone (IANA name)
   const REPO='rykersage/starhaven';
   const list=document.getElementById('whatsnew');
   if(!list) return;
-  function ago(iso){
-    const days=(Date.now()-new Date(iso).getTime())/86400000;
-    if(days<1) return 'today';
-    if(days<7) return 'recently';
-    return 'a while ago';
+  function stamp(iso){
+    const d=new Date(iso), now=new Date();
+    const sameDay = d.toDateString()===now.toDateString();
+    return sameDay
+      ? d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+      : d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   }
   fetch('https://api.github.com/repos/'+REPO+'/commits?per_page=3')
     .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
@@ -469,7 +470,7 @@ const MOON_TZ  = 'America/Chicago';   // YOUR timezone (IANA name)
         const msg=c.commit.message.split('\n')[0];           // commit subject line
         const li=document.createElement('li');
         const d=document.createElement('span'); d.className='d';
-        d.textContent=ago(c.commit.author.date)+' \u2014 ';
+        d.textContent=stamp(c.commit.author.date)+' \u2014 ';
         li.appendChild(d);
         li.appendChild(document.createTextNode(msg+' '));     // textContent = XSS-safe
         if(i===0){ const b=document.createElement('span'); b.className='badge'; b.textContent='NEW'; li.appendChild(b); }
