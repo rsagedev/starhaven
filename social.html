@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>&#128279; LINKS &mdash; STARHAVEN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#080612;
+    --panel:#150f2e;
+    --panel2:#1c1440;
+    --frame:#4a2fae;
+    --frame2:#7b4dff;
+    --ink:#eae6ff;
+    --dim:#9a8fd4;
+    --sky:#67e8ff;
+    --pink:#ff7bd5;
+    --gold:#ffd34d;
+    --lime:#b6ff5c;
+    --red:#ff5d73;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:
+      radial-gradient(1100px 700px at 80% -10%, rgba(123,77,255,.22), transparent 60%),
+      radial-gradient(900px 600px at 0% 110%, rgba(255,123,213,.12), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"VT323",ui-monospace,monospace;
+    font-size:19px;line-height:1.45;
+    min-height:100vh;overflow-x:hidden;
+  }
+
+  #stars{position:fixed;inset:0;z-index:0;pointer-events:none;}
+  #stars i{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw 3s infinite ease-in-out;}
+  @keyframes tw{0%,100%{opacity:.12;transform:scale(.6)}50%{opacity:.95;transform:scale(1.3)}}
+  #rain{position:fixed;inset:0;z-index:1;pointer-events:none;}
+  body::after{content:"";position:fixed;inset:0;z-index:50;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);mix-blend-mode:multiply;}
+  body::before{content:"";position:fixed;inset:0;z-index:49;pointer-events:none;
+    box-shadow:inset 0 0 220px 40px rgba(0,0,0,.7);}
+
+  .page{position:relative;z-index:2;max-width:600px;margin:0 auto;padding:18px 16px 70px;}
+
+  .hero{text-align:center;padding:22px 0 6px;}
+  .title{font-family:"Press Start 2P",monospace;font-size:clamp(18px,6.5vw,34px);line-height:1.1;animation:hue 7s linear infinite;}
+  .title span{display:inline-block;color:hsl(calc(var(--i)*32 + 200),95%,68%);
+    text-shadow:3px 3px 0 #000,0 0 14px currentColor;animation:bob 1.7s ease-in-out infinite;animation-delay:calc(var(--i)*0.07s);}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+  @keyframes hue{to{filter:hue-rotate(360deg)}}
+  .tag{font-size:22px;color:var(--gold);margin-top:14px;}
+  .tag .cur{animation:blink 1s steps(2) infinite;}
+  @keyframes blink{50%{opacity:0}}
+
+  nav{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:16px 0;}
+  nav a{font-family:"Silkscreen",monospace;font-size:12px;text-decoration:none;color:var(--ink);
+    background:var(--panel2);border:2px solid var(--frame);padding:7px 11px;transition:.12s;}
+  nav a:hover{background:var(--frame);color:#fff;transform:translateY(-2px);box-shadow:0 3px 0 var(--frame2);}
+  nav a.here{background:var(--frame);color:#fff;}
+
+  .win{background:var(--panel);border:2px solid var(--frame);box-shadow:0 0 0 2px #000,6px 6px 0 rgba(0,0,0,.5);margin-bottom:14px;}
+  .win .bar{background:linear-gradient(90deg,var(--frame),var(--frame2));font-family:"Press Start 2P",monospace;
+    font-size:10px;line-height:1.5;padding:9px 11px;display:flex;align-items:center;gap:8px;color:#fff;text-shadow:2px 2px 0 #000;}
+  .win .bar .x{margin-left:auto;opacity:.8;}
+  .win .body{padding:15px 16px;}
+
+  /* ---- link buttons ---- */
+  .links{display:flex;flex-direction:column;gap:10px;}
+  .link{
+    display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--ink);
+    background:var(--panel2);border:2px solid var(--frame);padding:12px 14px;transition:.12s;
+  }
+  .link:hover{background:var(--frame);transform:translateX(4px);box-shadow:-4px 0 0 var(--frame2);}
+  .link .ico{flex:none;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+    font-size:22px;background:#000;border:2px solid var(--frame2);}
+  .link .txt{display:flex;flex-direction:column;line-height:1.2;}
+  .link .name{font-family:"Silkscreen",monospace;font-size:13px;}
+  .link .handle{font-size:16px;color:var(--dim);}
+  .link:hover .handle{color:#fff;}
+  .link .arr{margin-left:auto;color:var(--dim);font-size:18px;}
+  .link:hover .arr{color:#fff;}
+
+  footer{text-align:center;margin-top:24px;font-family:"Silkscreen",monospace;font-size:11px;color:var(--dim);line-height:1.9;}
+  #cursorLayer{position:absolute;top:0;left:0;width:100%;height:0;overflow:visible;z-index:60;pointer-events:none;}
+  .ghost{position:absolute;font-size:16px;line-height:1;text-shadow:1px 1px 0 #000;filter:drop-shadow(0 0 6px currentColor);transition:transform .08s linear;will-change:transform;}
+</style>
+</head>
+<body>
+<div id="cursorLayer"></div>
+<div id="stars"></div>
+<canvas id="rain"></canvas>
+
+<div class="page">
+
+  <div class="hero">
+    <h1 class="title" id="title">LINKS</h1>
+    <div class="tag">&#10022; find me around the web <span class="cur">_</span></div>
+  </div>
+
+  <nav>
+    <a href="index.html">home</a>
+    <a href="index.html">about</a>
+    <a href="index.html">projects</a>
+    <a class="here" href="links.html">links</a>
+    <a href="guestbook.html">guestbook</a>
+  </nav>
+
+  <section class="win">
+    <div class="bar">links.dir <span class="x">[ &#215; ]</span></div>
+    <div class="body">
+      <div class="links">
+
+        <a class="link" href="#" target="_blank" rel="noopener">
+          <span class="ico">&#9670;</span>
+          <span class="txt"><span class="name">Discord</span><span class="handle">@sage1o</span></span>
+          <span class="arr">&#10148;</span>
+        </a>
+
+        <a class="link" href="https://www.youtube.com/@sageio" target="_blank" rel="noopener">
+          <span class="ico">&#9658;</span>
+          <span class="txt"><span class="name">YouTube</span><span class="handle">@sageio</span></span>
+          <span class="arr">&#10148;</span>
+        </a>
+
+        <a class="link" href="https://github.com/rsagedev" target="_blank" rel="noopener">
+          <span class="ico">&#9632;</span>
+          <span class="txt"><span class="name">GitHub</span><span class="handle">@rsagedev</span></span>
+          <span class="arr">&#10148;</span>
+        </a>
+
+        <a class="link" href="https://www.last.fm/user/realsag3r" target="_blank" rel="noopener">
+          <span class="ico">&#9834;</span>
+          <span class="txt"><span class="name">Last.fm</span><span class="handle">@realsag3r</span></span>
+          <span class="arr">&#10148;</span>
+        </a>
+
+        <a class="link" href="email:emailme.undoing280@passinbox.com" target="_blank" rel="noopener">
+          <span class="ico">&#9993;</span>
+          <span class="txt"><span class="name">Email</span><span class="handle">emailme.undoing280@passinbox.com</span></span>
+          <span class="arr">&#10148;</span>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div><a href="index.html" style="color:var(--gold);text-decoration:none;border-bottom:1px dotted var(--gold);">&larr; back to starhaven</a></div>
+    <div>(c) 2026 Ryker S. &mdash; handcrafted with &#9829;</div>
+  </footer>
+</div>
+
+<script>
+/* animated NES title */
+(function(){
+  const t=document.getElementById('title'), s=t.textContent; t.textContent='';
+  [...s].forEach(function(ch,i){const sp=document.createElement('span');sp.textContent=ch;sp.style.setProperty('--i',i);t.appendChild(sp);});
+})();
+/* starfield */
+(function(){
+  let h=''; for(let i=0;i<90;i++) h+='<i style="left:'+(Math.random()*100)+'%;top:'+(Math.random()*100)+'%;animation-delay:'+(Math.random()*3)+'s"></i>';
+  document.getElementById('stars').innerHTML=h;
+})();
+/* rain — honors the disable choice saved elsewhere on the site */
+var rain=(function(){
+  const cv=document.getElementById('rain'),ctx=cv.getContext('2d');
+  let drops=[],raf=null;
+  function size(){cv.width=innerWidth;cv.height=innerHeight;}
+  function seed(){const k=Math.round(innerWidth/7);drops=Array.from({length:k},function(){
+    return{x:Math.random()*cv.width,y:Math.random()*cv.height,l:10+Math.random()*18,s:7+Math.random()*8,o:.12+Math.random()*.3};});}
+  function frame(){ctx.clearRect(0,0,cv.width,cv.height);ctx.lineWidth=1;
+    for(const d of drops){ctx.strokeStyle='rgba(123,77,255,'+d.o+')';ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x,d.y+d.l);ctx.stroke();
+      d.y+=d.s;if(d.y>cv.height){d.y=-d.l;d.x=Math.random()*cv.width;}}
+    raf=requestAnimationFrame(frame);}
+  addEventListener('resize',function(){if(cv.style.display!=='none'){size();seed();}});
+  return{start:function(){cv.style.display='block';size();seed();if(!raf)frame();},
+         stop:function(){if(raf)cancelAnimationFrame(raf);raf=null;ctx.clearRect(0,0,cv.width,cv.height);cv.style.display='none';}};
+})();
+(function(){ let off=false; try{off=localStorage.getItem('noRain')==='1';}catch(_){}
+  off?rain.stop():rain.start(); })();
+</script>
+<script>window.API='https://api.yourdomain.com';</script>
+<script src="cursors.js"></script>
+</body>
+</html>
