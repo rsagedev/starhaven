@@ -146,13 +146,6 @@
   .ctrl{font-size:16px;font-family:"Silkscreen",monospace;}
   .ctrl label{cursor:pointer;display:block;padding:2px 0;}
 
-  /* ---- live ghost cursors ---- */
-  #cursorLayer{position:absolute;top:0;left:0;width:100%;height:0;overflow:visible;
-    z-index:60;pointer-events:none;}
-  .ghost{position:absolute;font-size:16px;line-height:1;
-    text-shadow:1px 1px 0 #000;filter:drop-shadow(0 0 6px currentColor);
-    transition:transform .08s linear;will-change:transform;}
-
   /* ---- snake arcade ---- */
   .arcade-btn{font-family:"Silkscreen",monospace;font-size:12px;color:#fff;cursor:pointer;
     background:linear-gradient(90deg,var(--frame),var(--frame2));border:2px solid #000;padding:9px 14px;}
@@ -173,13 +166,15 @@
   .dpad button:active{background:var(--frame);}
   .dpad-mid{display:flex;justify-content:center;gap:6px;margin-top:6px;}
   @media (hover:none) and (pointer:coarse){ .dpad{display:block;} }  /* show on touch devices */
+  #cursorLayer{position:absolute;top:0;left:0;width:100%;height:0;overflow:visible;z-index:60;pointer-events:none;}
+  .ghost{position:absolute;font-size:16px;line-height:1;text-shadow:1px 1px 0 #000;filter:drop-shadow(0 0 6px currentColor);transition:transform .08s linear;will-change:transform;}
 </style>
 </head>
 <body>
+<div id="cursorLayer"></div>
 <div id="stars"></div>
 <div id="shooter"></div>
 <canvas id="rain"></canvas>
-<div id="cursorLayer"></div>
 
 <div class="page">
 
@@ -451,7 +446,7 @@ const MOON_TZ  = 'America/Chicago';   // YOUR timezone (IANA name)
 
 /* ---- whats_new.log: latest 3 commits from GitHub ---- */
 (function(){
-  const REPO='rykersage/starhaven';
+  const REPO='rsagedev/starhaven';
   const list=document.getElementById('whatsnew');
   if(!list) return;
   function stamp(iso){
@@ -597,68 +592,6 @@ const MOON_TZ  = 'America/Chicago';   // YOUR timezone (IANA name)
   reset();
 })();
 
-/* ---- live cursors: see other visitors' mice on this page ----
-   Positions are sent as document coordinates (x as a fraction of page
-   width, y in pixels from the top of the document) so they map sensibly
-   across different screen sizes. Toggle off in controls (remembered). */
-(function(){
-  const layer=document.getElementById('cursorLayer');
-  const box=document.getElementById('noCursors');
-  const ghosts={};                       // id -> element
-  let ws=null, sendTimer=0, enabled=true, retry=0;
-
-  try{ enabled = localStorage.getItem('noCursors')!=='1'; }catch(_){}
-  box.checked=!enabled;
-
-  function wsUrl(){
-    const base = API || location.origin;
-    return base.replace(/^http/,'ws') + '/cursors?page=' + encodeURIComponent(location.pathname);
-  }
-  function connect(){
-    if(!enabled || ws) return;
-    try{ ws=new WebSocket(wsUrl()); }catch(_){ return; }
-    ws.onmessage=function(e){
-      let m; try{ m=JSON.parse(e.data); }catch(_){ return; }
-      if(m.gone){ if(ghosts[m.id]){ ghosts[m.id].remove(); delete ghosts[m.id]; } return; }
-      let g=ghosts[m.id];
-      if(!g){
-        g=document.createElement('div'); g.className='ghost';
-        g.textContent='\u27A4';                       // little arrow
-        layer.appendChild(g); ghosts[m.id]=g;
-      }
-      g.style.color=m.c;
-      const x=m.x*document.documentElement.clientWidth;   // fraction -> px
-      g.style.transform='translate('+x+'px,'+m.y+'px) rotate(-45deg)';
-    };
-    ws.onclose=function(){
-      ws=null; clearGhosts();
-      if(enabled && retry<6){ retry++; setTimeout(connect, 2000*retry); }   // gentle reconnect
-    };
-    ws.onopen=function(){ retry=0; };
-  }
-  function clearGhosts(){ for(const id in ghosts){ ghosts[id].remove(); delete ghosts[id]; } }
-
-  document.addEventListener('mousemove',function(e){
-    if(!enabled || !ws || ws.readyState!==1) return;
-    const now=Date.now();
-    if(now-sendTimer<40) return;                      // ~25 sends/sec max
-    sendTimer=now;
-    ws.send(JSON.stringify({
-      x: e.pageX/document.documentElement.clientWidth, // fraction of page width
-      y: e.pageY                                       // px from document top
-    }));
-  });
-
-  box.addEventListener('change',function(){
-    enabled=!box.checked;
-    try{ localStorage.setItem('noCursors', box.checked?'1':'0'); }catch(_){}
-    if(!enabled){ if(ws){ws.close();} ws=null; clearGhosts(); }
-    else { retry=0; connect(); }
-  });
-
-  connect();
-})();
-
 /* ---- rain (straight down) + remembered toggle ---- */
 var rain=(function(){
   const cv=document.getElementById('rain'),ctx=cv.getContext('2d');
@@ -684,5 +617,7 @@ var rain=(function(){
   });
 })();
 </script>
+<script>window.API='https://api.rsage.dev';</script>
+<script src="cursors.js"></script>
 </body>
 </html>
