@@ -70,12 +70,6 @@
   .cell{width:22px;height:22px;flex:none;background:var(--panel2);border:1px solid var(--frame);cursor:pointer;border-radius:2px;}
   .cell.beat{margin-left:7px;}
   .cell.play{box-shadow:0 0 0 2px #fff inset;}
-  .seprow{font-family:"Silkscreen",monospace;font-size:9px;color:var(--frame2);padding:8px 0 2px 58px;}
-  .row.note .cell{height:18px;}          /* compact the many chromatic rows */
-  .row.note .cells{touch-action:none;}   /* let drag-to-size work on touch */
-  .cell.nstart{box-shadow:inset 3px 0 0 #fff;}   /* marks where a note begins */
-  .row.sharp .lbl{opacity:.6;}
-  .row.sharp .cell{background:#120e26;}  /* darker empty cells = piano-roll black keys */
   .synthrow select{background:#000;border:2px solid var(--frame);color:var(--ink);
     font-family:"VT323",monospace;font-size:16px;padding:2px 5px;cursor:pointer;}
 
@@ -112,7 +106,7 @@
 
   <!-- DRUM MACHINE -->
   <section class="win">
-    <div class="bar">sequencer &mdash; drums + synth</div>
+    <div class="bar">drum machine</div>
     <div class="body">
       <div class="transport">
         <button class="btn" id="play">&#9654; play</button>
@@ -218,152 +212,51 @@ function clap(t){
 }
 const TRIG={ kick:kick, snare:snare, hat:function(t){hat(t,false);}, open:function(t){hat(t,true);}, clap:clap };
 
-/* frequency for a semitone at a given octave offset */
-function freqAt(semi,oct){ return 440*Math.pow(2,(60+oct*12+semi-69)/12); }
 
-/* a time-scheduled synth note for the sequencer (per-note wave + octave) */
-function playNoteAt(semi,time,dur,waveType,oct){
-  const o=audio.createOscillator(), f=audio.createBiquadFilter(), g=audio.createGain();
-  o.type=waveType||'sine'; o.frequency.value=freqAt(semi, oct||0);
-  f.type='lowpass'; f.frequency.value=2600;
-  const atk=0.008, rel=0.07, peak=0.30, sus=0.22;
-  const end=time+Math.max(dur,0.04);                 // how long the note is held
-  g.gain.setValueAtTime(0.0001,time);
-  g.gain.exponentialRampToValueAtTime(peak,time+atk);            // attack
-  const susStart=Math.min(time+atk+0.04, end);
-  g.gain.exponentialRampToValueAtTime(sus,susStart);            // settle to sustain
-  g.gain.setValueAtTime(sus,Math.max(susStart,end));            // HOLD until end
-  g.gain.exponentialRampToValueAtTime(0.0001,Math.max(susStart,end)+rel); // release
-  o.connect(f).connect(g).connect(master); o.start(time); o.stop(Math.max(susStart,end)+rel+0.02);
-}
-
-/* ===================== SEQUENCER ===================== */
+/* ===================== SEQUENCER (drums) ===================== */
 const INSTRUMENTS=[
-  {id:'kick', name:'KICK', color:'#ff7bd5', kind:'drum'},
-  {id:'snare',name:'SNARE',color:'#67e8ff', kind:'drum'},
-  {id:'hat',  name:'HAT',  color:'#b6ff5c', kind:'drum'},
-  {id:'open', name:'OPEN', color:'#ffd34d', kind:'drum'},
-  {id:'clap', name:'CLAP', color:'#7b4dff', kind:'drum'},
+  {id:'kick', name:'KICK', color:'#ff7bd5'},
+  {id:'snare',name:'SNARE',color:'#67e8ff'},
+  {id:'hat',  name:'HAT',  color:'#b6ff5c'},
+  {id:'open', name:'OPEN', color:'#ffd34d'},
+  {id:'clap', name:'CLAP', color:'#7b4dff'},
 ];
-/* melodic rows: full chromatic octave, high pitch at top, played through the synth */
-const SCALE=[12,11,10,9,8,7,6,5,4,3,2,1,0];
-const NOTENAME={0:'C',1:'C#',2:'D',3:'D#',4:'E',5:'F',6:'F#',7:'G',8:'G#',9:'A',10:'A#',11:'B',12:'C\u2191'};
-const SHARPS={1:1,3:1,6:1,8:1,10:1};
-const MELODY=SCALE.map(function(s){ return {id:'n'+s, name:NOTENAME[s], kind:'note', semi:s,
-  sharp:!!SHARPS[s], color:SHARPS[s]?'#6f63b8':'#9a8bff'}; });
-const TRACKS=INSTRUMENTS.concat(MELODY);
 
 const STEPS_DEFAULT=16;
 let STEPS=STEPS_DEFAULT;
-const pattern={};            // drum rows: boolean per step
-const notes={};              // melody rows: array of {start,len} (in steps)
-const trackById={};
-TRACKS.forEach(function(tr){
-  trackById[tr.id]=tr;
-  if(tr.kind==='drum') pattern[tr.id]=new Array(STEPS).fill(false);
-  else notes[tr.id]=[];
-});
+const pattern={};
+INSTRUMENTS.forEach(function(ins){ pattern[ins.id]=new Array(STEPS).fill(false); });
 // starter beat so it makes sound immediately
 [0,4,8,12].forEach(function(i){pattern.kick[i]=true;});
 [4,12].forEach(function(i){pattern.snare[i]=true;});
 [0,2,4,6,8,10,12,14].forEach(function(i){pattern.hat[i]=true;});
-// a simple starter melody with varied note lengths (drag to resize)
-notes.n0.push({start:0,len:2});
-notes.n4.push({start:4,len:2});
-notes.n7.push({start:8,len:4});
 
 const seqEl=document.getElementById('seq');
 const cellEls={};
 
 function buildGrid(){
   seqEl.innerHTML=''; for(const k in cellEls) delete cellEls[k];
-  let sepDone=false;
-  TRACKS.forEach(function(tr){
-    if(tr.kind==='note' && !sepDone){
-      sepDone=true;
-      const sep=document.createElement('div'); sep.className='seprow';
-      sep.textContent='\u25BE SYNTH \u2014 click to place, drag right to size, click a note to delete';
-      seqEl.appendChild(sep);
-    }
-    if(tr.kind==='drum'){
-      const old=pattern[tr.id]||[];                 // resize, keeping hits
-      pattern[tr.id]=new Array(STEPS).fill(false).map(function(_,i){ return old[i]||false; });
-    } else {
-      notes[tr.id]=(notes[tr.id]||[]).filter(function(n){ return n.start<STEPS; })   // clamp to length
-        .map(function(n){ return {start:n.start, len:Math.min(n.len, STEPS-n.start)}; });
-    }
+  INSTRUMENTS.forEach(function(tr){
+    const old=pattern[tr.id]||[];                 // resize, keeping hits
+    pattern[tr.id]=new Array(STEPS).fill(false).map(function(_,i){ return old[i]||false; });
 
-    const row=document.createElement('div');
-    row.className='row'+(tr.kind==='note'?' note':'')+(tr.sharp?' sharp':'');
+    const row=document.createElement('div'); row.className='row';
     const lbl=document.createElement('div'); lbl.className='lbl'; lbl.textContent=tr.name; lbl.style.color=tr.color;
     const cells=document.createElement('div'); cells.className='cells';
     cellEls[tr.id]=[];
     for(let i=0;i<STEPS;i++){
       const c=document.createElement('div');
       c.className='cell'+(i%8===0&&i>0?' beat':'');
-      if(tr.kind==='drum'){
-        if(pattern[tr.id][i]) c.style.background=tr.color;
-        c.addEventListener('click',function(){
-          pattern[tr.id][i]=!pattern[tr.id][i];
-          c.style.background=pattern[tr.id][i]?tr.color:'';
-        });
-      } else {
-        c.dataset.tr=tr.id; c.dataset.step=i;
-        c.addEventListener('pointerdown',function(e){
-          e.preventDefault();
-          const k=noteIndexAt(tr.id,i);
-          if(k>=0){ notes[tr.id].splice(k,1); paintRow(tr.id); return; }   // click note = delete
-          drag={trId:tr.id, start:i, len:1};
-          paintRow(tr.id);
-        });
-      }
+      if(pattern[tr.id][i]) c.style.background=tr.color;
+      c.addEventListener('click',function(){
+        pattern[tr.id][i]=!pattern[tr.id][i];
+        c.style.background=pattern[tr.id][i]?tr.color:'';
+      });
       cells.appendChild(c); cellEls[tr.id].push(c);
     }
     row.appendChild(lbl); row.appendChild(cells); seqEl.appendChild(row);
-    if(tr.kind==='note') paintRow(tr.id);
   });
 }
-
-/* --- piano-roll helpers --- */
-let drag=null;   // {trId, start, len}
-function noteIndexAt(trId,step){
-  const arr=notes[trId]||[];
-  for(let k=0;k<arr.length;k++){ const n=arr[k]; if(step>=n.start && step<n.start+n.len) return k; }
-  return -1;
-}
-function maxLenFrom(trId,start){
-  let max=STEPS-start;
-  (notes[trId]||[]).forEach(function(n){ if(n.start>start) max=Math.min(max, n.start-start); });
-  return Math.max(1,max);
-}
-function paintRow(trId){
-  const cells=cellEls[trId], tr=trackById[trId]; if(!cells) return;
-  cells.forEach(function(c){ c.style.background=''; c.style.opacity=''; c.classList.remove('nstart'); });
-  function fill(start,len,preview){
-    for(let s=start;s<start+len && s<STEPS;s++){
-      const c=cells[s]; if(!c) continue;
-      c.style.background=tr.color;
-      if(preview) c.style.opacity='0.65';
-      if(s===start) c.classList.add('nstart');
-    }
-  }
-  (notes[trId]||[]).forEach(function(n){ fill(n.start,n.len,false); });
-  if(drag && drag.trId===trId) fill(drag.start,drag.len,true);
-}
-document.addEventListener('pointermove',function(e){
-  if(!drag) return;
-  const el=document.elementFromPoint(e.clientX,e.clientY);
-  if(!el || el.dataset.tr!==drag.trId) return;
-  const step=parseInt(el.dataset.step); if(isNaN(step)) return;
-  let len=step-drag.start+1; if(len<1) len=1;
-  drag.len=Math.min(len, maxLenFrom(drag.trId,drag.start));
-  paintRow(drag.trId);
-});
-document.addEventListener('pointerup',function(){
-  if(!drag) return;
-  notes[drag.trId].push({start:drag.start, len:drag.len});
-  const id=drag.trId; drag=null; paintRow(id);
-});
 buildGrid();
 
 /* lookahead scheduler (tight timing, independent of UI) */
@@ -371,13 +264,7 @@ let isPlaying=false, current16=0, nextNoteTime=0, schedTimer=null;
 const noteQueue=[];
 function bpm(){ return Math.min(220,Math.max(50, parseInt(document.getElementById('bpm').value)||120)); }
 function scheduleStep(step,time){
-  const sixteenth=60/bpm()/4;
   INSTRUMENTS.forEach(function(ins){ if(pattern[ins.id][step]) TRIG[ins.id](time); });
-  MELODY.forEach(function(tr){
-    (notes[tr.id]||[]).forEach(function(n){
-      if(n.start===step) playNoteAt(tr.semi, time, sixteenth*n.len);   // each note's own length
-    });
-  });
   noteQueue.push({step:step,time:time});
 }
 function scheduler(){
@@ -389,8 +276,8 @@ function scheduler(){
   schedTimer=setTimeout(scheduler,25);
 }
 function setColumn(step){
-  TRACKS.forEach(function(tr){
-    cellEls[tr.id].forEach(function(c,i){ c.classList.toggle('play', i===step); });
+  INSTRUMENTS.forEach(function(ins){
+    cellEls[ins.id].forEach(function(c,i){ c.classList.toggle('play', i===step); });
   });
 }
 function draw(){
@@ -406,7 +293,7 @@ playBtn.addEventListener('click',function(){
   if(isPlaying){
     isPlaying=false; clearTimeout(schedTimer);
     playBtn.innerHTML='&#9654; play';
-    TRACKS.forEach(function(tr){ cellEls[tr.id].forEach(function(c){c.classList.remove('play');}); });
+    INSTRUMENTS.forEach(function(ins){ cellEls[ins.id].forEach(function(c){c.classList.remove('play');}); });
   } else {
     isPlaying=true; current16=0; nextNoteTime=audio.currentTime+0.06;
     playBtn.innerHTML='&#9632; stop'; scheduler();
@@ -417,7 +304,6 @@ document.getElementById('clear').addEventListener('click',function(){
     pattern[ins.id].fill(false);
     cellEls[ins.id].forEach(function(c){ c.style.background=''; });
   });
-  MELODY.forEach(function(tr){ notes[tr.id]=[]; paintRow(tr.id); });
 });
 document.getElementById('vol').addEventListener('input',function(e){
   if(master) master.gain.value=parseFloat(e.target.value);
@@ -429,7 +315,7 @@ document.getElementById('len').addEventListener('change',function(e){
 });
 
 /* ===================== SYNTH KEYBOARD ===================== */
-let wave='sine', octave=0, noteLen=1;
+let wave='sine', octave=0;
 const voices={};
 function freqFor(semi){ return 440*Math.pow(2,(60+octave*12+semi-69)/12); }
 function noteOn(id,semi){
@@ -460,12 +346,18 @@ function makeKey(def,cls,leftPct){
   const el=document.createElement('div');
   el.className='key '+cls; el.dataset.semi=def.s; el.style.left=leftPct+'%';
   el.innerHTML='<span class="hint">'+def.k.toUpperCase()+'</span>';
-  el.addEventListener('pointerdown',function(e){ e.preventDefault(); el.setPointerCapture(e.pointerId);
-    noteOn('m'+def.s,def.s); el.classList.add('on'); });
-  const up=function(){ noteOff('m'+def.s); el.classList.remove('on'); };
-  el.addEventListener('pointerup',up);
-  el.addEventListener('pointercancel',up);
-  el.addEventListener('pointerleave',function(e){ if(e.buttons) up(); });
+  const on=function(){ noteOn('m'+def.s,def.s); el.classList.add('on'); };
+  const off=function(){ noteOff('m'+def.s); el.classList.remove('on'); };
+  el.addEventListener('pointerdown',function(e){
+    e.preventDefault();
+    // release the implicit capture so dragging onto other keys plays them (glide)
+    try{ el.releasePointerCapture(e.pointerId); }catch(_){}
+    on();
+  });
+  el.addEventListener('pointerenter',function(e){ if(e.buttons) on(); });   // drag onto a key = play it
+  el.addEventListener('pointerleave',function(e){ if(e.buttons) off(); });  // drag off a key = release it
+  el.addEventListener('pointerup',off);
+  el.addEventListener('pointercancel',off);
   piano.appendChild(el);
 }
 WHITES.forEach(function(d,i){ makeKey(d,'white',i*12.5); });
